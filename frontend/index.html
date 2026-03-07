@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>College Complaint Management System</title>
+  <meta name="description" content="Manage and track college complaints — Student, Staff, Admin portal" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     AUTH SECTION
+════════════════════════════════════════════════════════════ -->
+<section id="auth-section">
+  <div class="auth-card">
+    <div class="logo">
+      <h1>🎓 Complaint Portal</h1>
+      <p>College Complaint Management System</p>
+    </div>
+    <form id="login-form" autocomplete="on">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input id="email" type="email" placeholder="you@college.edu" required autocomplete="email" />
+      </div>
+      <div class="form-group" style="margin-bottom:1.5rem">
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="••••••••" required autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" id="login-btn">Login</button>
+    </form>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     APP SECTION
+════════════════════════════════════════════════════════════ -->
+<div id="app-section">
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <span class="header-logo">🎓 Complaint Portal</span>
+      <span id="header-role" class="role-badge"></span>
+    </div>
+    <div class="header-right">
+      <button class="notif-btn" id="notif-toggle" title="Notifications">
+        🔔<span id="notif-badge" class="notif-badge hidden">0</span>
+      </button>
+      <span class="user-info" id="header-user"></span>
+      <button class="btn btn-ghost btn-sm" id="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <!-- Body -->
+  <div class="app-body">
+
+    <!-- Sidebar -->
+    <nav id="sidebar-nav"></nav>
+
+    <!-- Main -->
+    <main>
+
+      <!-- ─── ADMIN: Dashboard ─────────────────────────────────────── -->
+      <div class="page" id="page-dashboard">
+        <div class="page-header">
+          <h2>📊 Admin Dashboard</h2>
+          <p>Overview of all complaints in the system</p>
+        </div>
+        <div class="stats-strip">
+          <div class="stat-card">
+            <div class="stat-num" id="stat-total" style="color:var(--primary)">—</div>
+            <div class="stat-label">Total Complaints</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-pending" style="color:var(--warning)">—</div>
+            <div class="stat-label">Pending</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-progress" style="color:var(--info)">—</div>
+            <div class="stat-label">In Progress</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-resolved" style="color:var(--success)">—</div>
+            <div class="stat-label">Resolved</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚡ Quick Actions</div>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="navigateTo('all-complaints')">View All Complaints</button>
+            <button class="btn btn-ghost"   onclick="navigateTo('create-user')">Create User</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── ADMIN: All Complaints ────────────────────────────────── -->
+      <div class="page" id="page-all-complaints">
+        <div class="page-header flex-between">
+          <div>
+            <h2>📋 All Complaints</h2>
+            <p>View and assign all complaints</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadAllComplaints()">↺ Refresh</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>Title</th><th>Category</th><th>Status</th><th>Assigned To</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="all-complaints-body">
+                <tr><td colspan="6" class="empty-state">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── ADMIN: Create User ────────────────────────────────────── -->
+      <div class="page" id="page-create-user">
+        <div class="page-header">
+          <h2>👤 Create User</h2>
+          <p>Add a new Student, Staff, or Admin to the system</p>
+        </div>
+        <div class="card" style="max-width:480px">
+          <form id="create-user-form">
+            <div class="form-group">
+              <label for="u-college-id">College ID</label>
+              <input id="u-college-id" type="text" placeholder="CS2024001" required />
+            </div>
+            <div class="form-group">
+              <label for="u-name">Full Name</label>
+              <input id="u-name" type="text" placeholder="John Doe" required />
+            </div>
+            <div class="form-group">
+              <label for="u-email">Email</label>
+              <input id="u-email" type="email" placeholder="john@college.edu" required />
+            </div>
+            <div class="form-group">
+              <label for="u-password">Password</label>
+              <input id="u-password" type="password" placeholder="••••••••" required />
+            </div>
+            <div class="form-group" style="margin-bottom:1.5rem">
+              <label for="u-role">Role</label>
+              <select id="u-role" required>
+                <option value="STUDENT">Student</option>
+                <option value="STAFF">Staff</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Create User</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ─── STUDENT: My Complaints ──────────────────────────────── -->
+      <div class="page" id="page-my-complaints">
+        <div class="page-header flex-between">
+          <div>
+            <h2>📋 My Complaints</h2>
+            <p>All complaints you have submitted</p>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="navigateTo('submit-complaint')">+ New Complaint</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>Title</th><th>Category</th><th>Status</th><th>Date</th></tr>
+              </thead>
+              <tbody id="my-complaints-body">
+                <tr><td colspan="5" class="empty-state">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── STUDENT: Submit Complaint ───────────────────────────── -->
+      <div class="page" id="page-submit-complaint">
+        <div class="page-header">
+          <h2>✏️ Submit Complaint</h2>
+          <p>Describe your complaint and it will be reviewed by administration</p>
+        </div>
+        <div class="card" style="max-width:520px">
+          <form id="submit-complaint-form">
+            <div class="form-group">
+              <label for="c-title">Complaint Title</label>
+              <input id="c-title" type="text" placeholder="Brief title of the issue" required maxlength="500" />
+            </div>
+            <div class="form-group">
+              <label for="c-category">Category</label>
+              <select id="c-category" required>
+                <option value="HOSTEL">Hostel</option>
+                <option value="ADMINISTRATIVE">Administrative</option>
+                <option value="ACADEMIC">Academic</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:1.5rem">
+              <label for="c-desc">Description</label>
+              <textarea id="c-desc" placeholder="Describe your complaint in detail…" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Complaint</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ─── STAFF: Assigned Complaints ──────────────────────────── -->
+      <div class="page" id="page-assigned-complaints">
+        <div class="page-header flex-between">
+          <div>
+            <h2>📌 Assigned to Me</h2>
+            <p>Complaints assigned to you — update their status below</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="loadAssignedComplaints()">↺ Refresh</button>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>Title</th><th>Category</th><th>Status</th><th>Action</th></tr>
+              </thead>
+              <tbody id="assigned-complaints-body">
+                <tr><td colspan="5" class="empty-state">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main><!-- /main -->
+  </div><!-- /app-body -->
+</div><!-- /app-section -->
+
+<!-- ═══════════════════════════════════════════════════════════
+     NOTIFICATION PANEL
+════════════════════════════════════════════════════════════ -->
+<div id="notif-panel" class="notif-panel">
+  <div class="notif-header">
+    <span>🔔 Notifications</span>
+  </div>
+  <div id="notif-list" class="notif-list">
+    <div class="notif-empty">No notifications</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: Assign Complaint (Admin)
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="assign-modal">
+  <div class="modal">
+    <div class="modal-title">📌 Assign Complaint</div>
+    <form id="assign-form">
+      <input type="hidden" id="assign-complaint-id" />
+      <div class="form-group" style="margin-bottom:1.5rem">
+        <label for="assign-staff-select">Select Staff Member</label>
+        <select id="assign-staff-select" required></select>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('assign-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Assign</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MODAL: Update Status (Staff)
+════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="status-modal">
+  <div class="modal">
+    <div class="modal-title">🔄 Update Complaint Status</div>
+    <form id="status-form">
+      <input type="hidden" id="status-complaint-id" />
+      <div class="form-group">
+        <label for="status-select">New Status</label>
+        <select id="status-select" required>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="RESOLVED">Resolved</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:1.5rem">
+        <label for="status-remarks">Remarks (optional)</label>
+        <textarea id="status-remarks" placeholder="Add a remark for the student…"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('status-modal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Status</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>
