@@ -41,6 +41,7 @@ def submit_complaint(
     summary="Get complaints (role-filtered)",
 )
 def list_complaints(
+    sort_by: str = "priority",  # priority, date_new, date_old, category
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -50,7 +51,18 @@ def list_complaints(
     - STAFF → complaints assigned to them
     - ADMIN → all complaints
     """
-    return get_complaints(db, current_user=current_user)
+    complaints = get_complaints(db, current_user=current_user)
+
+    if sort_by == "priority":
+        return sorted(complaints, key=lambda x: x.priority_score, reverse=True)
+    elif sort_by == "date_new":
+        return sorted(complaints, key=lambda x: x.created_at, reverse=True)
+    elif sort_by == "date_old":
+        return sorted(complaints, key=lambda x: x.created_at)
+    elif sort_by == "category":
+        return sorted(complaints, key=lambda x: x.category)
+
+    return complaints
 
 
 @router.patch(

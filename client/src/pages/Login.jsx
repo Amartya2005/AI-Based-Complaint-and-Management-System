@@ -2,6 +2,8 @@ import React, { useState, useContext, useEffect, useRef, useCallback } from 'rea
 import { useNavigate } from 'react-router-dom';
 import { login } from '../services/auth';
 import { AuthContext } from '../context/AuthContext';
+import { motion } from 'framer-motion';
+import Loader from '../components/Loader';
 
 // ─── Captcha helpers ──────────────────────────────────────────────────────────
 const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -79,11 +81,7 @@ const Login = () => {
         if (!loading && user) navigate(`/${user.role}`, { replace: true });
     }, [user, loading, navigate]);
 
-    if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900">
-            <div className="text-white text-lg font-semibold animate-pulse">Loading...</div>
-        </div>
-    );
+    if (loading) return <Loader message="Authenticating..." fullScreen={true} />;
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -106,6 +104,25 @@ const Login = () => {
         }
     };
 
+    // Animation variants
+    const cardVariants = {
+        hidden: { opacity: 0, y: 50 },
+        show: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: 'spring', stiffness: 100, damping: 20,
+                staggerChildren: 0.1,
+                delayChildren: 0.2
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, x: -20 },
+        show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 100 } }
+    };
+
     return (
         <div
             className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden"
@@ -122,11 +139,16 @@ const Login = () => {
             />
 
             {/* Login Card */}
-            <div className="relative z-10 flex w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl">
+            <motion.div
+                variants={cardVariants}
+                initial="hidden"
+                animate="show"
+                className="relative z-10 flex w-full max-w-2xl rounded-2xl overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)]"
+            >
 
                 {/* ── Left Panel ── */}
                 <div
-                    className="hidden md:flex flex-col items-center justify-center w-5/12 p-10 text-white text-center relative"
+                    className="hidden md:flex flex-col items-center justify-center w-5/12 p-10 text-white text-center relative overflow-hidden"
                     style={{
                         backgroundImage: 'url(/campus_bg.png)',
                         backgroundSize: 'cover',
@@ -134,46 +156,67 @@ const Login = () => {
                     }}
                 >
                     {/* dark overlay just for left panel */}
-                    <div className="absolute inset-0 bg-black/65" />
+                    <div className="absolute inset-0 bg-[#004e54]/80 mix-blend-multiply" />
+                    <div className="absolute inset-0 bg-black/40" />
 
                     <div className="relative z-10 flex flex-col items-center gap-5">
                         {/* Logo circle */}
-                        <div className="w-24 h-24 rounded-full border-4 border-white/30 overflow-hidden shadow-lg bg-white/10 flex items-center justify-center">
+                        <motion.div
+                            variants={itemVariants}
+                            whileHover={{ scale: 1.05, rotate: 5 }}
+                            className="w-24 h-24 rounded-full border-4 border-white/30 overflow-hidden shadow-2xl bg-white/10 flex items-center justify-center hover:border-white/50 transition-colors"
+                        >
                             <img
                                 src="/university_emblem.png"
                                 alt="GIET University"
                                 className="w-full h-full object-cover"
                             />
-                        </div>
+                        </motion.div>
 
-                        <div>
-                            <h2 className="text-2xl font-extrabold tracking-[0.18em] uppercase leading-tight">
+                        <motion.div variants={itemVariants}>
+                            <h2 className="text-2xl font-extrabold tracking-[0.18em] uppercase leading-tight drop-shadow-lg">
                                 GIET<br />UNIVERSITY
                             </h2>
-                            <div className="mt-2 w-10 h-0.5 bg-teal-400 mx-auto rounded-full" />
-                            <p className="text-xs text-gray-300 mt-3 italic font-light">
+                            <motion.div
+                                initial={{ scaleX: 0 }}
+                                animate={{ scaleX: 1 }}
+                                transition={{ delay: 0.6, duration: 0.8 }}
+                                className="mt-2 w-10 h-0.5 bg-teal-400 mx-auto rounded-full origin-left"
+                            />
+                            <p className="text-xs text-teal-100 mt-3 italic font-light">
                                 Best University in Eastern India
                             </p>
-                        </div>
+                        </motion.div>
                     </div>
+
+                    <motion.div
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                        className="absolute -bottom-10 -right-10 w-40 h-40 bg-teal-400/20 rounded-full blur-3xl"
+                    />
+                    <motion.div
+                        animate={{ y: [0, 20, 0] }}
+                        transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+                        className="absolute -top-10 -left-10 w-32 h-32 bg-blue-400/20 rounded-full blur-3xl"
+                    />
                 </div>
 
                 {/* ── Right Panel ── */}
-                <div className="flex-1 bg-white px-8 py-10 flex flex-col justify-center">
-                    <h1 className="text-3xl font-bold tracking-[0.2em] text-teal-500 mb-7">
+                <div className="flex-1 bg-white px-8 py-10 flex flex-col justify-center relative">
+                    <motion.h1 variants={itemVariants} className="text-3xl font-bold tracking-[0.2em] text-teal-500 mb-7">
                         LOGIN
-                    </h1>
+                    </motion.h1>
 
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg mb-5">
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="bg-red-50 border border-red-200 text-red-600 text-sm p-3 rounded-lg mb-5">
                             {error}
-                        </div>
+                        </motion.div>
                     )}
 
                     <form onSubmit={handleLogin} className="space-y-4">
 
                         {/* Email / Username */}
-                        <div className="relative">
+                        <motion.div variants={itemVariants} className="relative group">
                             <input
                                 type="email"
                                 required
@@ -184,16 +227,16 @@ const Login = () => {
                                 className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-lg text-sm outline-none
                                            focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition bg-gray-50 placeholder-gray-400"
                             />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-500 transition-colors pointer-events-none">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
                             </span>
-                        </div>
+                        </motion.div>
 
                         {/* Password */}
-                        <div className="relative">
+                        <motion.div variants={itemVariants} className="relative group">
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 required
@@ -207,7 +250,7 @@ const Login = () => {
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-500 transition"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-500 group-focus-within:text-teal-400 transition"
                             >
                                 {showPassword ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -222,10 +265,10 @@ const Login = () => {
                                     </svg>
                                 )}
                             </button>
-                        </div>
+                        </motion.div>
 
                         {/* Captcha row */}
-                        <div className="flex items-center gap-3">
+                        <motion.div variants={itemVariants} className="flex items-center gap-3">
                             <div
                                 onClick={refreshCaptcha}
                                 className="cursor-pointer select-none flex-shrink-0"
@@ -242,26 +285,32 @@ const Login = () => {
                                 className="flex-1 px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none
                                            focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition bg-gray-50 placeholder-gray-400"
                             />
-                        </div>
-                        <p className="text-xs text-gray-400 -mt-1 pl-1">Click the captcha image to refresh</p>
+                        </motion.div>
+                        <motion.p variants={itemVariants} className="text-xs text-gray-400 -mt-1 pl-1">Click the captcha image to refresh</motion.p>
 
                         {/* Submit */}
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full py-3 bg-teal-500 hover:bg-teal-600 active:bg-teal-700 text-white
-                                       font-bold tracking-[0.2em] rounded-lg shadow-md transition disabled:opacity-60 mt-1"
-                        >
-                            {isSubmitting ? 'Signing in...' : 'LOGIN'}
-                        </button>
+                        <motion.div variants={itemVariants}>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full py-3 bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 active:bg-teal-700 text-white
+                                           font-bold tracking-[0.2em] rounded-lg shadow-lg hover:shadow-teal-500/50 transition disabled:opacity-60 mt-1 flex justify-center items-center"
+                            >
+                                {isSubmitting ? (
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                ) : 'LOGIN'}
+                            </motion.button>
+                        </motion.div>
                     </form>
 
-                    <p className="text-center text-xs text-gray-400 mt-6">
+                    <motion.p variants={itemVariants} className="text-center text-xs text-gray-400 mt-6">
                         Contact your administrator if you need access.
-                    </p>
+                    </motion.p>
                 </div>
 
-            </div>
+            </motion.div>
         </div>
     );
 };

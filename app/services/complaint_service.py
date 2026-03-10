@@ -98,6 +98,15 @@ def create_complaint(db: Session, data: ComplaintCreate, student_id: int) -> Com
         confidence_score=confidence,
     )
 
+    # ─ Initialize Priority ─────────────────────────────
+    from app.services.ml_service import calculate_severity_score
+    from app.services.priority_service import initialize_complaint_priority
+    
+    severity_score = calculate_severity_score(predicted_category, confidence)
+    initialize_complaint_priority(complaint, severity_score, db)
+    db.commit()
+    db.refresh(complaint)
+
     # ─ System Auto-Assignment ────────────────────────────────────────────────────
     least_loaded_staff = _get_least_loaded_staff(db)
     if least_loaded_staff:

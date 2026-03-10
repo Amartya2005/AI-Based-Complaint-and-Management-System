@@ -1,6 +1,6 @@
 import enum
 from sqlalchemy import (
-    Column, BigInteger, String, Text, DateTime, ForeignKey, Enum
+    Column, BigInteger, String, Text, DateTime, ForeignKey, Enum, Integer, Float
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -21,6 +21,13 @@ class ComplaintStatus(str, enum.Enum):
     REJECTED = "REJECTED"
 
 
+class PriorityLevel(str, enum.Enum):
+    CRITICAL = "CRITICAL"  # 80-100
+    HIGH = "HIGH"          # 60-79
+    MEDIUM = "MEDIUM"      # 40-59
+    LOW = "LOW"            # 0-39
+
+
 class Complaint(Base):
     __tablename__ = "complaints"
 
@@ -34,6 +41,16 @@ class Complaint(Base):
     student_id = Column(BigInteger, ForeignKey("users.id"), nullable=False)
     assigned_to = Column(BigInteger, ForeignKey("users.id"), nullable=True)
     department_id = Column(BigInteger, ForeignKey("departments.id"), nullable=True)
+    
+    # Priority System Fields
+    priority_score = Column(Integer, default=0, nullable=False)
+    severity_score = Column(Float, default=0.0, nullable=False)
+    impact_score = Column(Integer, default=15, nullable=False)
+    aging_score = Column(Integer, default=0, nullable=False)
+    priority_level = Column(
+        Enum(PriorityLevel), nullable=False, default=PriorityLevel.LOW
+    )
+    
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime,

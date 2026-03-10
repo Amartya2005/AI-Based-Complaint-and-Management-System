@@ -1,6 +1,35 @@
+import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from apscheduler.schedulers.background import BackgroundScheduler
 from app.routers import auth, users, complaints, notifications, departments
+from app.database import SessionLocal
+from app.services.priority_service import recalculate_all_priorities
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def priority_job():
+    logger.info("Running scheduled priority recalculation...")
+    db = SessionLocal()
+    try:
+        recalculate_all_priorities(db)
+    except Exception as e:
+        logger.error(f"Error recalculating priorities: {e}")
+    finally:
+        db.close()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = BackgroundScheduler()
+    # Run the priority job every hour. Adjust as needed.
+    scheduler.add_job(priority_job, "interval", hours=1)
+    scheduler.start()
+    logger.info("Scheduler started.")
+    yield
+    scheduler.shutdown()
+    logger.info("Scheduler shut down.")
 
 app = FastAPI(
     title="College Complaint Management System",
@@ -11,6 +40,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
