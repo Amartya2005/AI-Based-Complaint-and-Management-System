@@ -1,6 +1,6 @@
 # College Complaint Management System (CCMS)
 
-An AI-powered Complaint Classifier and Management System designed for colleges. This system automates the process of categorizing, assigning, and tracking student complaints using FastAPI, React, and Machine Learning.
+An AI-powered Complaint Classifier and Management System designed for colleges. This system automates the process of categorizing, assigning, evaluating priority, and tracking student complaints using FastAPI, React, and Machine Learning.
 
 ## 🚀 Features
 
@@ -9,7 +9,8 @@ An AI-powered Complaint Classifier and Management System designed for colleges. 
   - **Staff**: Manage assigned complaints, update progress, and resolve issues.
   - **Admin**: Dashboard overview, cross-department analytics, and staff assignment.
 - **AI Classification**: Automatically suggests or classifies complaint categories and departments using ML (Machine Learning).
-- **Real-time Notifications**: Keeps users updated on status changes.
+- **Dynamic Priority Engine & Scheduling**: Uses APScheduler to automatically escalate complaint priorities based on aging, severity (derived from ML), and impact parameters.
+- **Real-time Notifications**: Keeps users updated on status changes and priority escalations.
 - **Secure Authentication**: JWT-based authentication with role-based access control (RBAC).
 
 ## 🛠️ Tech Stack
@@ -20,6 +21,8 @@ An AI-powered Complaint Classifier and Management System designed for colleges. 
 - **Authentication**: JWT (JSON Web Tokens)
 - **Validation**: Pydantic v2
 - **Environment**: Python-dotenv
+- **Background Tasks**: APScheduler
+- **Machine Learning**: Scikit-Learn
 
 ### Frontend
 - **Framework**: [React](https://reactjs.org/) (Vite)
@@ -37,7 +40,7 @@ An AI-powered Complaint Classifier and Management System designed for colleges. 
 │   ├── models/        # SQLAlchemy Models (User, Complaint, MLPrediction, etc.)
 │   ├── routers/       # API Route Handlers (Complaints, Users, etc.)
 │   ├── schemas/       # Pydantic Schemas (Data validation)
-│   ├── services/      # Business logic (Complaint handling, ML integration)
+│   ├── services/      # Business logic (Complaint handling, ML integration, Priorities)
 │   ├── config.py      # App configuration
 │   └── main.py        # Entry point
 ├── client/            # React Frontend
@@ -81,6 +84,7 @@ An AI-powered Complaint Classifier and Management System designed for colleges. 
 5. **Initialize Database**:
    ```bash
    python create_tables.py
+   python migrate_db.py  # Run DB migrations for priority fields if upgrading from older versions
    ```
 
 6. **Run the Server**:
@@ -111,11 +115,12 @@ Once the backend is running, you can access the interactive API documentation at
 - **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
-## 🤖 AI Classification Integration
+## 🤖 AI Classification & Dynamic Priority
 
-The system includes an `MLPrediction` model and service to track AI-driven categorizations.
-- **Model Storage**: Predictions are logged in the `ml_predictions` table.
-- **Service**: `app/services/ml_service.py` provides helpers to persist inferences.
+- **Classification Model**: Uses scikit-learn Logistic Regression pipeline with TF-IDF Vectorization for complaint categorization logic (`app/services/ml_service.py`). Predictions are logged in the `ml_predictions` table.
+- **Priority System**:
+  - `priority_score` dynamically generated via Severity + Aging + Impact (`app/services/priority_service.py`).
+  - **Background Scheduler** recalculates valid priorities hourly. Auto-escalated tickets alert the Admin and Assigned staff member instantly.
 
 ## 🤝 Contributing
 

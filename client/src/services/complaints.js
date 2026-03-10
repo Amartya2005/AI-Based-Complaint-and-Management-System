@@ -1,7 +1,11 @@
 import api from './api';
 
-export const fetchComplaints = async () => {
-    const response = await api.get('/complaints/');
+export const fetchComplaints = async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.sortBy) query.append('sort_by', params.sortBy);
+
+    const url = `/complaints/${query.toString() ? '?' + query.toString() : ''}`;
+    const response = await api.get(url);
     return response.data;
 };
 

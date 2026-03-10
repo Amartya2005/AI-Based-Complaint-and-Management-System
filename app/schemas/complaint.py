@@ -20,6 +20,11 @@ class ComplaintOut(BaseModel):
     student_id: int
     assigned_to: Optional[int] = None
     department_id: Optional[int] = None
+    priority_score: int
+    severity_score: float
+    impact_score: int
+    aging_score: int
+    priority_level: str
     created_at: datetime
     updated_at: datetime
 

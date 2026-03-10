@@ -1,0 +1,29 @@
+
+> client@0.0.0 build
+> vite build
+
+[36mvite v7.3.1 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 1822 modules transformed.
+[31m✗[39m Build failed in 10.09s
+[31merror during build:
+[31msrc/pages/staff/Dashboard.jsx (6:16): "ArrowsDownUp" is not exported by "node_modules/lucide-react/dist/esm/lucide-react.js", imported by "src/pages/staff/Dashboard.jsx".[31m
+file: [36mC:/Users/savan/Desktop/AI complaint Classifier and Management system/client/src/pages/staff/Dashboard.jsx:6:16[31m
+[33m
+4: import StatusBadge from '../../components/StatusBadge';
+5: import PriorityBadge from '../../components/PriorityBadge';
+6: import { Inbox, ArrowsDownUp } from 'lucide-react';
+                   ^
+7: 
+8: const CATEGORIES = ['All', 'HOSTEL', 'ADMINISTRATIVE', 'ACADEMIC'];
+[31m
+    at getRollupError (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/parseAst.js:402:41)
+    at error (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/parseAst.js:398:42)
+    at Module.error (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/node-entry.js:17040:16)
+    at Module.traceVariable (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/node-entry.js:17452:29)
+    at ModuleScope.findVariable (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/node-entry.js:15070:39)
+    at ReturnValueScope.findVariable (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at FunctionBodyScope.findVariable (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/node-entry.js:5673:38)
+    at Identifier.bind (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/node-entry.js:5447:40)
+    at CallExpression.bind (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/node-entry.js:2825:28)
+    at CallExpression.bind (file:///C:/Users/savan/Desktop/AI%20complaint%20Classifier%20and%20Management%20system/client/node_modules/rollup/dist/es/shared/node-entry.js:12179:15)[39m

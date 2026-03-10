@@ -22,3 +22,21 @@ def log_ml_prediction(
     db.commit()
     db.refresh(prediction)
     return prediction
+
+
+def calculate_severity_score(predicted_category: str, confidence: float) -> float:
+    """
+    Calculate severity score (0-50) based on category and model confidence.
+    """
+    # Base severity by category
+    category_weights = {
+        'ACADEMIC': 40,      # High priority
+        'HOSTEL': 35,        # Medium-high priority
+        'ADMINISTRATIVE': 30 # Medium priority
+    }
+    
+    base_score = category_weights.get(predicted_category, 30)
+    # Adjust by confidence (assuming confidence 0.0-1.0 range)
+    severity = base_score * (0.5 + (confidence * 0.5))
+    return min(severity, 50.0)  # Cap at 50
+
