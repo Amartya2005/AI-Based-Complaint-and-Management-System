@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { logout } from '../services/auth';
 import { fetchComplaints } from '../services/complaints';
 import { Menu, MessageSquare, Bell, User as UserIcon, ChevronDown, LogOut, FileText } from 'lucide-react';
+import Loader from '../components/Loader';
 
 const MainLayout = ({ allowedRole }) => {
     const { user, setUser, loading } = useContext(AuthContext);
@@ -45,7 +46,7 @@ const MainLayout = ({ allowedRole }) => {
         navigate('/');
     };
 
-    if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#ecf0f5] text-[#00c4cc] text-xl font-semibold">Loading...</div>;
+    if (loading) return <Loader message="Verifying session..." fullScreen={true} />;
 
     if (!user) {
         return <Navigate to="/" replace />;

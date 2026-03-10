@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Home, FileText, List, CheckSquare, Users, BarChart } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
     const { user, setUser } = useContext(AuthContext);
@@ -24,12 +25,32 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         return [];
     };
 
+    const navContainer = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const navItem = {
+        hidden: { opacity: 0, x: -20 },
+        show: { opacity: 1, x: 0 }
+    };
+
     return (
         <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-[#1e2330] to-[#2c323f] text-gray-300 flex flex-col min-h-screen shadow-2xl lg:shadow-[4px_0_24px_-4px_rgba(0,0,0,0.05)] transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
             {/* Logo Area */}
             <div className="h-24 bg-white/5 backdrop-blur-sm flex items-center px-6 border-b border-white/10 shrink-0">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mr-3 p-1 shadow-inner shrink-0">
-                    <img src="/university_emblem.png" alt="GIET Logo" className="h-full w-full object-contain drop-shadow-md" />
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mr-3 p-1 shadow-inner shrink-0 relative overflow-hidden group">
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                        className="absolute inset-[-50%] bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                    />
+                    <img src="/university_emblem.png" alt="GIET Logo" className="h-full w-full object-contain drop-shadow-md relative z-10" />
                 </div>
                 <div className="flex flex-col justify-center">
                     <span className="text-white font-sans font-extrabold tracking-wide text-lg leading-tight uppercase">GIET University</span>
@@ -50,26 +71,43 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
             {/* Navigation Links */}
             <nav className="flex-1 py-6 overflow-y-auto px-4">
-                <ul className="space-y-2">
+                <motion.ul
+                    variants={navContainer}
+                    initial="hidden"
+                    animate="show"
+                    className="space-y-2"
+                >
                     {getLinks().map((link) => (
-                        <li key={link.to}>
+                        <motion.li key={link.to} variants={navItem}>
                             <NavLink
                                 to={link.to}
                                 end={link.to === `/${user.role}`}
                                 onClick={() => { if (window.innerWidth < 1024) setIsOpen(false); }}
                                 className={({ isActive }) =>
-                                    `group flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 text-sm font-medium ${isActive
-                                        ? 'bg-gradient-to-r from-[#00c4cc] to-[#00a1a8] text-white shadow-md shadow-[#00c4cc]/20'
-                                        : 'hover:bg-white/10 hover:text-white text-gray-400 hover:translate-x-1'
+                                    `group flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 text-sm font-medium relative overflow-hidden ${isActive
+                                        ? 'text-white shadow-md shadow-[#00c4cc]/20 bg-gradient-to-r from-[#00c4cc] to-[#00a1a8]'
+                                        : 'hover:bg-white/10 hover:text-white text-gray-400'
                                     }`
                                 }
                             >
-                                <link.icon size={18} className={`transition-transform duration-300 ${!window.location.pathname.startsWith(link.to) && 'group-hover:scale-110'}`} />
-                                <span>{link.label}</span>
+                                {({ isActive }) => (
+                                    <>
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="activeTab"
+                                                className="absolute inset-0 bg-gradient-to-r from-[#00c4cc] to-[#00a1a8] z-0"
+                                                initial={false}
+                                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                            />
+                                        )}
+                                        <link.icon size={18} className={`relative z-10 transition-transform duration-300 ${!isActive && 'group-hover:scale-110'}`} />
+                                        <span className="relative z-10 group-hover:translate-x-1 transition-transform">{link.label}</span>
+                                    </>
+                                )}
                             </NavLink>
-                        </li>
+                        </motion.li>
                     ))}
-                </ul>
+                </motion.ul>
             </nav>
 
         </aside>

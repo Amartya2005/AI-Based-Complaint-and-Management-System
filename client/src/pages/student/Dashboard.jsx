@@ -4,6 +4,8 @@ import { useToast } from '../../context/ToastContext';
 import { fetchComplaints, submitComplaint } from '../../services/complaints';
 import { Activity, CheckCircle, Clock, AlertCircle, ArrowRight, BarChart2, List as ListIcon, X, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import Loader from '../../components/Loader';
 
 const TiltCard = ({ stat }) => {
     const [transform, setTransform] = useState('');
@@ -16,7 +18,6 @@ const TiltCard = ({ stat }) => {
         const centerX = box.width / 2;
         const centerY = box.height / 2;
 
-        // Calculate rotation based on cursor position (max 10 degrees)
         const rotateX = ((y - centerY) / centerY) * -10;
         const rotateY = ((x - centerX) / centerX) * 10;
 
@@ -81,11 +82,7 @@ const StudentDashboard = () => {
         loadData();
     }, []);
 
-    if (loading) return (
-        <div className="flex items-center justify-center p-12 text-[#00c4cc] font-medium">
-            Loading dashboard...
-        </div>
-    );
+    if (loading) return <Loader message="Loading dashboard..." />;
 
     const pending = complaints.filter(c => c.status === 'PENDING').length;
     const assigned = complaints.filter(c => c.status === 'ASSIGNED').length;
@@ -124,21 +121,42 @@ const StudentDashboard = () => {
         { label: 'Pending', value: pending, bg: 'bg-gradient-to-br from-[#ffc107] to-[#e0a800]', textClass: 'text-gray-900', shadow: 'shadow-[#ffc107]/40', icon: AlertCircle },
     ];
 
+    // Motion Layout Variants
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: { staggerChildren: 0.1 }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+    };
+
     return (
-        <div className="space-y-6">
+        <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="space-y-6"
+        >
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded text-sm mb-4">{error}</div>
+                <motion.div variants={itemVariants} className="bg-red-50 border border-red-200 text-red-700 p-4 rounded text-sm mb-4">{error}</motion.div>
             )}
 
             {/* Row 1: 4 Colored Status Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {stats.map((stat, i) => (
-                    <TiltCard key={i} stat={stat} />
+                    <motion.div key={i} variants={itemVariants}>
+                        <TiltCard stat={stat} />
+                    </motion.div>
                 ))}
             </div>
 
             {/* Row 2: Progress Bars (mimicking "Attendance Summary" from GIET ERP) */}
-            <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-100/80 overflow-hidden relative">
+            <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-md rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-100/80 overflow-hidden relative">
                 {/* Decorative top accent line */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#17a2b8] to-[#00c4cc]"></div>
 
@@ -156,9 +174,12 @@ const StudentDashboard = () => {
                             <span className="text-[#ffc107]">{getPercent(hostel)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 h-4 rounded-sm overflow-hidden flex">
-                            <div
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${getPercent(hostel)}%` }}
+                                transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
                                 className="bg-[#ffc107] h-full"
-                                style={{ width: `${getPercent(hostel)}%`, backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem' }}
+                                style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem' }}
                             />
                         </div>
                     </div>
@@ -169,9 +190,12 @@ const StudentDashboard = () => {
                             <span className="text-[#ffc107]">{getPercent(admin)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 h-4 rounded-sm overflow-hidden flex">
-                            <div
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${getPercent(admin)}%` }}
+                                transition={{ duration: 1.2, ease: 'easeOut', delay: 0.3 }}
                                 className="bg-[#ffc107] h-full"
-                                style={{ width: `${getPercent(admin)}%`, backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem' }}
+                                style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem' }}
                             />
                         </div>
                     </div>
@@ -182,9 +206,12 @@ const StudentDashboard = () => {
                             <span className="text-[#ffc107]">{getPercent(academic)}%</span>
                         </div>
                         <div className="w-full bg-gray-200 h-4 rounded-sm overflow-hidden flex">
-                            <div
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${getPercent(academic)}%` }}
+                                transition={{ duration: 1.4, ease: 'easeOut', delay: 0.4 }}
                                 className="bg-[#ffc107] h-full"
-                                style={{ width: `${getPercent(academic)}%`, backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem' }}
+                                style={{ backgroundImage: 'linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)', backgroundSize: '1rem 1rem' }}
                             />
                         </div>
                     </div>
@@ -193,10 +220,10 @@ const StudentDashboard = () => {
                         <span className="text-sm font-medium text-[#ffc107]">Overview of registered issues.</span>
                     </div>
                 </div>
-            </div>
+            </motion.div>
 
-            {/* Row 3: Table (mimicking "Today's Time Table" from GIET ERP) */}
-            <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-100/80 overflow-hidden relative">
+            {/* Row 3: Table Container */}
+            <motion.div variants={itemVariants} className="bg-white/80 backdrop-blur-md rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-100/80 overflow-hidden relative">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#17a2b8] to-[#00c4cc]"></div>
 
                 <div className="p-5 flex items-center justify-between gap-4 border-b border-gray-100/80 bg-white/50">
@@ -206,163 +233,179 @@ const StudentDashboard = () => {
                         </div>
                         <h3 className="text-[#2c323f] font-bold text-base tracking-wide">Recent Complaints</h3>
                     </div>
-                    <h3 className="text-[#2c323f] font-bold text-base tracking-wide">Recent Complaints</h3>
+
+                    <motion.button
+                        whileHover={{ scale: 1.05, boxShadow: "0px 10px 15px -3px rgba(0,196,204,0.3)" }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setIsModalOpen(true)}
+                        className="text-xs flex items-center gap-2 font-semibold uppercase tracking-wider bg-gradient-to-r from-[#00c4cc] to-[#00a1a8] text-white px-5 py-2.5 rounded-xl transition-colors cursor-pointer"
+                    >
+                        <span>New Complaint</span>
+                    </motion.button>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="text-xs flex items-center gap-2 font-semibold uppercase tracking-wider bg-gradient-to-r from-[#00c4cc] to-[#00a1a8] hover:shadow-lg hover:shadow-[#00c4cc]/30 text-white px-5 py-2.5 rounded-xl transition-all duration-300 transform active:scale-95 cursor-pointer"
-                >
-                    <span>New Complaint</span>
-                </button>
-            </div>
 
-            <div className="p-4 bg-[#f8fafc] flex items-center border-b border-gray-100/80">
-                <div className="w-64 max-w-full">
-                    <select className="block w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00c4cc]/50 focus:border-transparent shadow-sm cursor-pointer transition-shadow">
-                        <option>All Statuses</option>
-                        <option>Pending</option>
-                        <option>Resolved</option>
-                    </select>
-                </div>
-            </div>
-
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gradient-to-r from-[#17a2b8] to-[#148ea1] text-white">
-                        <tr>
-                            <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider border-r border-white/10">ID</th>
-                            <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider border-r border-white/10">Title</th>
-                            <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider border-r border-white/10">Category</th>
-                            <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider border-r border-white/10">Status</th>
-                            <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider">Date Filed</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {complaints.length === 0 ? (
-                            <tr>
-                                <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
-                                    No complaints filed yet.
-                                </td>
-                            </tr>
-                        ) : (
-                            complaints.slice(0, 5).map((c, idx) => (
-                                <tr key={c.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                    <td className="px-4 py-2.5 border-t border-gray-100 font-mono text-gray-600">#{c.id}</td>
-                                    <td className="px-4 py-2.5 border-t border-gray-100 text-gray-800 font-medium">{c.title}</td>
-                                    <td className="px-4 py-2.5 border-t border-gray-100 text-[#17a2b8] font-semibold text-xs uppercase">{c.category}</td>
-                                    <td className="px-4 py-2.5 border-t border-gray-100">
-                                        <span className={`px-2 py-0.5 rounded text-xs font-bold text-white
-                                                ${c.status === 'RESOLVED' ? 'bg-[#28a745]' :
-                                                c.status === 'PENDING' ? 'bg-[#ffc107] text-gray-900' :
-                                                    c.status === 'REJECTED' ? 'bg-red-500' : 'bg-[#6c757d]'}`}>
-                                            {c.status.replace('_', ' ')}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-2.5 border-t border-gray-100 text-gray-500 whitespace-nowrap">
-                                        {new Date(c.created_at + 'Z').toLocaleDateString()}
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            {/* Interactive File Complaint Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm transition-opacity">
-                    {/* Modal Content */}
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all animate-[slideInUp_0.3s_ease-out]">
-
-                        {/* Header */}
-                        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-[#17a2b8]/5 to-transparent">
-                            <div>
-                                <h2 className="text-xl font-bold text-[#2c323f]">File a Complaint</h2>
-                                <p className="text-xs text-gray-500 mt-1">Submitting as: <strong className="text-[#00c4cc]">{user?.college_id}</strong></p>
-                            </div>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        {/* Form */}
-                        <form onSubmit={handleNewComplaintSubmit} className="p-6 space-y-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Issue Summary</label>
-                                <input
-                                    type="text" required placeholder="Brief title (e.g. WiFi not working)"
-                                    className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#00c4cc]/50 focus:border-[#00c4cc] outline-none transition bg-gray-50/50 hover:bg-white"
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category</label>
-                                <div className="relative">
-                                    <select
-                                        className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#00c4cc]/50 focus:border-[#00c4cc] outline-none transition bg-gray-50/50 hover:bg-white appearance-none cursor-pointer"
-                                        value={formData.category}
-                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    >
-                                        <option value="HOSTEL">Hostel</option>
-                                        <option value="ADMINISTRATIVE">Administrative</option>
-                                        <option value="ACADEMIC">Academic</option>
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Detailed Description</label>
-                                <textarea
-                                    required rows="4" placeholder="Please provide specific details about your issue..."
-                                    className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#00c4cc]/50 focus:border-[#00c4cc] outline-none transition bg-gray-50/50 hover:bg-white resize-none"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="px-6 py-2.5 text-sm font-bold uppercase tracking-wider bg-gradient-to-r from-[#00c4cc] to-[#00a1a8] hover:shadow-lg hover:shadow-[#00c4cc]/30 text-white rounded-xl shadow inline-flex items-center gap-2 transition disabled:opacity-70 disabled:cursor-not-allowed transform active:scale-95"
-                                >
-                                    {isSubmitting ? (
-                                        <span className="flex items-center gap-2">
-                                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                                            Sending...
-                                        </span>
-                                    ) : (
-                                        <><Send size={16} /> Submit Ticket</>
-                                    )}
-                                </button>
-                            </div>
-                        </form>
+                <div className="p-4 bg-[#f8fafc] flex items-center border-b border-gray-100/80">
+                    <div className="w-64 max-w-full">
+                        <select className="block w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00c4cc]/50 focus:border-transparent shadow-sm cursor-pointer transition-shadow">
+                            <option>All Statuses</option>
+                            <option>Pending</option>
+                            <option>Resolved</option>
+                        </select>
                     </div>
                 </div>
-            )}
 
-            <style>{`
-                @keyframes slideInUp {
-                    from { transform: translateY(20px) scale(0.95); opacity: 0; }
-                    to { transform: translateY(0) scale(1); opacity: 1; }
-                }
-            `}</style>
-        </div>
+                {/* Table Content */}
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gradient-to-r from-[#17a2b8] to-[#148ea1] text-white">
+                            <tr>
+                                <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider border-r border-white/10">ID</th>
+                                <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider border-r border-white/10">Title</th>
+                                <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider border-r border-white/10">Category</th>
+                                <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider border-r border-white/10">Status</th>
+                                <th className="px-6 py-4 font-semibold text-xs uppercase tracking-wider">Date Filed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {complaints.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                                        No complaints filed yet.
+                                    </td>
+                                </tr>
+                            ) : (
+                                complaints.slice(0, 5).map((c, idx) => (
+                                    <motion.tr
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.1 * idx }}
+                                        key={c.id}
+                                        className={idx % 2 === 0 ? 'bg-white hover:bg-gray-50 transition-colors' : 'bg-gray-50 hover:bg-gray-100 transition-colors'}
+                                    >
+                                        <td className="px-4 py-2.5 border-t border-gray-100 font-mono text-gray-600">#{c.id}</td>
+                                        <td className="px-4 py-2.5 border-t border-gray-100 text-gray-800 font-medium">{c.title}</td>
+                                        <td className="px-4 py-2.5 border-t border-gray-100 text-[#17a2b8] font-semibold text-xs uppercase">{c.category}</td>
+                                        <td className="px-4 py-2.5 border-t border-gray-100">
+                                            <span className={`px-2 py-0.5 rounded text-xs font-bold text-white
+                                                    ${c.status === 'RESOLVED' ? 'bg-[#28a745]' :
+                                                    c.status === 'PENDING' ? 'bg-[#ffc107] text-gray-900' :
+                                                        c.status === 'REJECTED' ? 'bg-red-500' : 'bg-[#6c757d]'}`}>
+                                                {c.status.replace('_', ' ')}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-2.5 border-t border-gray-100 text-gray-500 whitespace-nowrap">
+                                            {new Date(c.created_at + 'Z').toLocaleDateString()}
+                                        </td>
+                                    </motion.tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </motion.div>
+
+            {/* Interactive File Complaint Modal */}
+            <AnimatePresence>
+                {isModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm"
+                    >
+                        {/* Modal Content */}
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                            transition={{ type: "spring", duration: 0.4 }}
+                            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+                        >
+                            {/* Header */}
+                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-[#17a2b8]/5 to-transparent">
+                                <div>
+                                    <h2 className="text-xl font-bold text-[#2c323f]">File a Complaint</h2>
+                                    <p className="text-xs text-gray-500 mt-1">Submitting as: <strong className="text-[#00c4cc]">{user?.college_id}</strong></p>
+                                </div>
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Form */}
+                            <form onSubmit={handleNewComplaintSubmit} className="p-6 space-y-5">
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Issue Summary</label>
+                                    <input
+                                        type="text" required placeholder="Brief title (e.g. WiFi not working)"
+                                        className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#00c4cc]/50 focus:border-[#00c4cc] outline-none transition bg-gray-50/50 hover:bg-white"
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category</label>
+                                    <div className="relative">
+                                        <select
+                                            className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#00c4cc]/50 focus:border-[#00c4cc] outline-none transition bg-gray-50/50 hover:bg-white appearance-none cursor-pointer"
+                                            value={formData.category}
+                                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                        >
+                                            <option value="HOSTEL">Hostel</option>
+                                            <option value="ADMINISTRATIVE">Administrative</option>
+                                            <option value="ACADEMIC">Academic</option>
+                                        </select>
+                                        <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Detailed Description</label>
+                                    <textarea
+                                        required rows="4" placeholder="Please provide specific details about your issue..."
+                                        className="w-full px-4 py-3 text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#00c4cc]/50 focus:border-[#00c4cc] outline-none transition bg-gray-50/50 hover:bg-white resize-none"
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="px-5 py-2.5 text-sm font-semibold text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="px-6 py-2.5 text-sm font-bold uppercase tracking-wider bg-gradient-to-r from-[#00c4cc] to-[#00a1a8] text-white rounded-xl shadow inline-flex items-center gap-2 transition disabled:opacity-70 disabled:cursor-not-allowed"
+                                    >
+                                        {isSubmitting ? (
+                                            <span className="flex items-center gap-2">
+                                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                Sending...
+                                            </span>
+                                        ) : (
+                                            <><Send size={16} /> Submit</>
+                                        )}
+                                    </motion.button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
     );
 };
 
