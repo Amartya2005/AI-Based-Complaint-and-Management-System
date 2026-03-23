@@ -6,6 +6,7 @@ from app.models.complaint_status_history import ComplaintStatusHistory
 from app.models.ml_prediction import MLPrediction
 from app.models.attachment import Attachment
 from app.models.notification import Notification
+from app.models.staff_rating import StaffRating, StaffRatingSummary
 
 __all__ = [
     "Department",
@@ -15,4 +16,6 @@ __all__ = [
     "MLPrediction",
     "Attachment",
     "Notification",
+    "StaffRating",
+    "StaffRatingSummary",
 ]

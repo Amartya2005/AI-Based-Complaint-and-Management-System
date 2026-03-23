@@ -8,6 +8,7 @@ from app.schemas.complaint import (
     AssignComplaint,
     UpdateComplaintStatus,
 )
+from app.models.complaint import Complaint
 from app.models.user import User, UserRole
 from app.auth.dependencies import get_current_user, require_roles
 from app.services.complaint_service import (
@@ -103,3 +104,36 @@ def update_status_endpoint(
         data=data,
         staff_id=current_user.id,
     )
+
+
+@router.patch(
+    "/{complaint_id}/reassign",
+    response_model=ComplaintOut,
+    summary="Reassign complaint based on ratings (ADMIN only)",
+)
+def reassign_complaint_endpoint(
+    complaint_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    """
+    Reassign a complaint to the best available staff member based on:
+    - Average rating and performance tier
+    - Current workload
+    - Priority level
+
+    Returns updated complaint with new assignment.
+    """
+    from app.services.allocation_service import reassign_complaint
+
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    if not complaint:
+        from fastapi import HTTPException, status
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Complaint not found"
+        )
+
+    new_staff = reassign_complaint(db, complaint)
+    db.refresh(complaint)
+    return complaint

@@ -32,10 +32,16 @@ class User(Base):
         "Complaint",
         foreign_keys="Complaint.student_id",
         back_populates="student",
+        cascade="all, delete-orphan"
     )
     assigned_complaints = relationship(
         "Complaint",
         foreign_keys="Complaint.assigned_to",
         back_populates="assignee",
+        cascade="all, delete-orphan"
     )
-    notifications = relationship("Notification", back_populates="user")
+    notifications = relationship(
+        "Notification", 
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )

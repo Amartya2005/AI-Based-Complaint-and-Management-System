@@ -5,6 +5,8 @@ import { AuthContext } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import Loader from '../components/Loader';
 
+void motion;
+
 // ─── Captcha helpers ──────────────────────────────────────────────────────────
 const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
 function generateCaptcha(len = 5) {
@@ -76,12 +78,18 @@ const Login = () => {
         setCaptchaInput('');
     }, []);
 
-    // Single source of truth for redirect
+    // Redirect with delay after successful login
     useEffect(() => {
-        if (!loading && user) navigate(`/${user.role}`, { replace: true });
+        if (!loading && user) {
+            // Show loading animation for 2 seconds before redirecting
+            const timer = setTimeout(() => {
+                navigate(`/${user.role}`, { replace: true });
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
     }, [user, loading, navigate]);
 
-    if (loading) return <Loader message="Authenticating..." fullScreen={true} />;
+    if (loading || user) return <Loader message="Welcome! Preparing your dashboard..." fullScreen={true} />;
 
     const handleLogin = async (e) => {
         e.preventDefault();

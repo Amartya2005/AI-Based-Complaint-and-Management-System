@@ -59,6 +59,61 @@ def get_users(db: Session, role: Optional[UserRole] = None) -> List[User]:
     return query.all()
 
 
+def delete_user(db: Session, user_id: int) -> dict:
+    """Delete a user by ID and cascade delete related records. Returns a success message or raises an appropriate error."""
+    from app.models.notification import Notification
+    from app.models.staff_rating import StaffRating
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {user_id} not found"
+        )
+    
+    try:
+        # Delete related records in order to avoid constraint violations
+        # First, delete notifications
+        db.query(Notification).filter(Notification.user_id == user_id).delete()
+        
+        # Delete staff ratings if user is staff
+        db.query(StaffRating).filter(StaffRating.staff_id == user_id).delete()
+        
+        # Finally delete the user
+        db.delete(user)
+        db.commit()
+        return {"message": f"User {user.name} ({user.college_id}) has been deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        # Check if it's a foreign key constraint error
+        error_str = str(e).lower()
+        if 'foreign key' in error_str or 'constraint' in error_str or 'integrity' in error_str:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot delete {user.name} ({user.college_id}) because they have active assignments. Please deactivate the user instead to preserve complaint history and audit trails."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Failed to delete user: {str(e)}. Try deactivating instead."
+            )
+
+
+def deactivate_user(db: Session, user_id: int) -> User:
+    """Deactivate a user by marking them as inactive."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {user_id} not found"
+        )
+    
+    user.is_active = False
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Return a user by email, or None if not found."""
     return db.query(User).filter(User.email == email).first()

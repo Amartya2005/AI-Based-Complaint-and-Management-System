@@ -4,17 +4,9 @@ import { getCurrentUser } from '../services/auth';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState(() => getCurrentUser());
+    const [loading] = useState(false);
     const loggingOut = useRef(false);
-
-    useEffect(() => {
-        const storedUser = getCurrentUser();
-        if (storedUser) {
-            setUser(storedUser);
-        }
-        setLoading(false);
-    }, []);
 
     // Listen for the 'auth:logout' event dispatched by api.js on 401.
     // Using React state instead of window.location.href avoids aborting
