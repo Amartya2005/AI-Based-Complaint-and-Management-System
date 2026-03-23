@@ -107,33 +107,9 @@ def create_complaint(db: Session, data: ComplaintCreate, student_id: int) -> Com
     db.commit()
     db.refresh(complaint)
 
-    # ─ System Auto-Assignment ────────────────────────────────────────────────────
-    least_loaded_staff = _get_least_loaded_staff(db)
-    if least_loaded_staff:
-        # Assign the ticket mapping
-        complaint.assigned_to = least_loaded_staff.id
-        complaint.status = ComplaintStatus.ASSIGNED
-        
-        # Log status history
-        history = ComplaintStatusHistory(
-            complaint_id=complaint.id,
-            changed_by=student_id,  # Initial trigger is the student submitting
-            old_status=ComplaintStatus.PENDING,
-            new_status=ComplaintStatus.ASSIGNED,
-            remarks=f"System auto-assigned to {least_loaded_staff.name or 'Staff ' + str(least_loaded_staff.id)} based on workload.",
-        )
-        db.add(history)
-        
-        # Send Notification to the assigned staff member
-        create_notification(
-            db=db,
-            user_id=least_loaded_staff.id,
-            complaint_id=complaint.id,
-            message=f"System Auto-Assign: You have been assigned new complaint #{complaint.id}: '{complaint.title}'",
-        )
-        
-        db.commit()
-        db.refresh(complaint)
+    # ─ Complaint stays in PENDING status ──────────────────────────────────────────
+    # Admin will manually assign to staff members using the assignment endpoint
+    # This ensures proper review before assignment
 
     return complaint
 

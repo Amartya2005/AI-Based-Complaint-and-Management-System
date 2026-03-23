@@ -13,3 +13,13 @@ export const createUser = async (userData) => {
     });
     return response.data;
 };
+
+export const deleteUser = async (userId) => {
+    const response = await api.delete(`/users/${userId}`);
+    return response.data;
+};
+
+export const deactivateUser = async (userId) => {
+    const response = await api.patch(`/users/${userId}/deactivate`);
+    return response.data;
+};

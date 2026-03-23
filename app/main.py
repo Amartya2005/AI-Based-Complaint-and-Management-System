@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
-from app.routers import auth, users, complaints, notifications, departments
+from app.routers import auth, users, complaints, notifications, departments, ratings
 from app.database import SessionLocal
 from app.services.priority_service import recalculate_all_priorities
 
@@ -66,6 +66,7 @@ app.include_router(users.router)
 app.include_router(complaints.router)
 app.include_router(notifications.router)
 app.include_router(departments.router)
+app.include_router(ratings.router)
 
 # ─── Health ───────────────────────────────────────────────────────────────────
 @app.get("/api/health", tags=["Health"])
