@@ -48,7 +48,10 @@ def delete_user_endpoint(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
-    """Delete a user by ID. Returns an error if user has related records (consider deactivation)."""
+    """Delete a user by ID.
+    Returns 409 Conflict if the user has associated complaints (student or assigned).
+    See service for details. Prefer /deactivate for users with history.
+    """
     return delete_user(db, user_id)
 
 
