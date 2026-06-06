@@ -1,0 +1,103 @@
+# =============================================================================
+# Production compose for CCMS (full containerization)
+# (version key removed - modern Compose ignores it)
+#
+# Usage:
+#   # 1. Copy .env.example -> .env and fill strong values + prod hosts
+#   #    DATABASE_URL=...@mysql:3306/...
+#   #    REDIS_URL=redis://redis:6379/0
+#   #    ALLOWED_ORIGINS=https://yourdomain.com
+#   #    APP_ENV=production
+#   #    DEBUG=false
+#   # 2. docker compose -f docker-compose.prod.yml up --build -d
+#   # 3. Visit http://localhost (nginx serves React, proxies API/WS)
+#   # 4. To run tests inside container:
+#   #    docker compose -f docker-compose.prod.yml exec backend pytest --tb=short -q
+#
+# Data persistence: ./data/mysql, ./data/uploads, ./data/ml_models
+# ML models and uploads are bind-mounted (never baked into image).
+# =============================================================================
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: ccms-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-change-me-in-prod}
+      MYSQL_DATABASE: ${MYSQL_DB:-ComplaintManagement}
+      # For prod, restrict root host if possible; % kept for simplicity with root user
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-change-me-in-prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # No ports published in prod (internal only to backend)
+
+  redis:
+    image: redis:7-alpine
+    container_name: ccms-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # No ports
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ccms-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Force container-aware values (override .env if it had localhost)
+      - DATABASE_URL=${DATABASE_URL:-mysql+pymysql://root:change-me-in-prod@mysql:3306/ComplaintManagement}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - APP_ENV=production
+      - DEBUG=false
+      # ALLOWED_ORIGINS should be set in .env (no wildcard in prod - enforced in lifespan)
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Runtime data (never in image)
+      - ./data/uploads:/app/uploads
+      - ./data/ml_models:/app/app/ml/models
+    # Internal only; frontend proxies to it. Expose only if you need direct access for debugging.
+    # ports:
+    #   - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    container_name: ccms-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    volumes:
+      # Inject prod nginx config (with API + WS proxy + SPA + gzip + security headers)
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    # No need for other volumes; static is baked at build time.
+    # (All persistence is via bind mounts ./data/* defined per-service.)

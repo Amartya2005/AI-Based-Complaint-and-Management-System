@@ -1,5 +1,7 @@
 ﻿# College Complaint Management System
 
+[![CI](https://github.com/your-org-or-username/CCMS/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org-or-username/CCMS/actions/workflows/ci.yml)
+
 College Complaint Management System (CCMS) is a full-stack complaint intake, routing, escalation, tracking, analytics, and staff feedback platform for educational institutions. It is built with a FastAPI backend, a React + Vite frontend, SQLAlchemy ORM, MySQL/MariaDB, JWT authentication, and a background priority scheduler.
 
 This README describes the current implementation in this repository, including what the system does, how each role works, how the frontend and backend communicate, what API endpoints exist, how the complaint workflow runs end to end, and how to set the project up locally.
@@ -20,12 +22,47 @@ This README describes the current implementation in this repository, including w
 - [Database Model](#database-model)
 - [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
+- [Quick Start (Dev)](#quick-start-dev)
 - [Environment Variables](#environment-variables)
 - [Local Setup](#local-setup)
 - [Running the System](#running-the-system)
 - [Production Notes](#production-notes)
 - [Operational Notes and Current Limitations](#operational-notes-and-current-limitations)
 - [Troubleshooting](#troubleshooting)
+
+## Quick Start (Dev)
+
+The fastest way to get a working dev environment with Redis (for JWT blacklist + caching) and MySQL:
+
+```bash
+# 1. Start the supporting services (MySQL + Redis)
+docker compose -f docker-compose.dev.yml up -d
+
+# 2. (Optional) Wait for healthchecks
+docker compose -f docker-compose.dev.yml ps
+
+# 3. Activate venv + install deps (once)
+# python -m venv venv
+# .\venv\Scripts\Activate.ps1   # Windows
+# pip install -r requirements.txt
+
+# 4. Ensure .env exists (copy from .env.example and adjust passwords/SECRET_KEY)
+# python -c "import secrets; print('SECRET_KEY=', secrets.token_hex(32))"
+
+# 5. Run backend locally (FastAPI is NOT in the compose file yet)
+.\venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
+
+# 6. In another terminal, run the frontend
+cd client
+npm run dev
+```
+
+- Backend: http://localhost:8000 (docs at /docs)
+- Frontend: http://localhost:5173
+- Redis will now be reachable → logout actually revokes tokens, caching works.
+- MySQL data is persisted in the `mysql_dev_data` docker volume.
+
+See "Local Setup" and "Running the System" below for more details and non-Docker options.
 
 ## System Overview
 
@@ -849,12 +886,61 @@ Inside `client/`:
 
 ## Production Notes
 
-- The backend does not currently serve the React build itself.
-- In production, build the frontend inside `client/` and serve `client/dist` using a reverse proxy or static host.
-- Route API traffic to FastAPI through your reverse proxy.
-- Replace the seeded admin credentials.
-- Use a strong `SECRET_KEY`.
-- Restrict CORS origins to your real frontend origin(s).
+### Full containerized production (recommended)
+Use the provided multi-stage Dockerfiles + compose:
+
+```bash
+# Prepare prod .env (see .env.example for checklist)
+cp .env.example .env
+# Edit .env:
+#   APP_ENV=production
+#   DEBUG=false
+#   SECRET_KEY=... (strong, 32+ chars)
+#   DATABASE_URL=mysql+pymysql://root:STRONGPASS@mysql:3306/ComplaintManagement
+#   REDIS_URL=redis://redis:6379/0
+#   ALLOWED_ORIGINS=https://yourdomain.com   # NO "*" in production (enforced at startup)
+
+# Build and run everything
+docker compose -f docker-compose.prod.yml up --build -d
+
+# Verify
+curl -I http://localhost/          # should return 200 + React index
+docker compose -f docker-compose.prod.yml exec backend pytest --tb=short -q
+```
+
+- `frontend` service runs Nginx (React SPA + gzip + security headers + proxy for `/api/*`, `/ws/*`, and direct API paths used by the current frontend for compatibility).
+- `backend` runs uvicorn (2 workers) with non-root user.
+- Persistent volumes: `./data/mysql`, `./data/uploads`, `./data/ml_models` (ML models and uploads are bind-mounted, never copied into the image).
+- All services use `restart: unless-stopped`.
+- Healthchecks on mysql/redis + backend.
+
+See `docker-compose.prod.yml`, `Dockerfile`, `client/Dockerfile`, and `nginx/nginx.conf` for details.
+
+### Rate limiting (slowapi)
+Active defaults (configurable via .env):
+- `RATE_LIMIT_DEFAULT=100/minute`
+- `RATE_LIMIT_AUTH=10/minute`
+- `RATE_LIMIT_COMPLAINT_CREATE=20/minute`
+
+Limits are applied via `SlowAPIMiddleware` + `@limiter.limit(...)` decorators on sensitive routes. Exceeding returns 429.
+
+### User deletion policy (FK safety)
+User deletion is intentionally blocked (HTTP 409 Conflict) when the user has associated complaints (as the student filer or as the assigned staff member).
+
+- Endpoint: `DELETE /users/{user_id}` (ADMIN only)
+- On conflict: `{"detail": "User has associated complaints. Deactivate instead of delete."}`
+- Recommended: use `PATCH /users/{user_id}/deactivate` instead. This preserves full complaint history, status changes, ratings, and audit trails.
+- The service also best-effort cleans notifications/ratings-given before hard delete when no complaints block it.
+- Documented here and in code to avoid accidental data loss in production.
+
+See `app/services/user_service.py:delete_user` and the 409 `ConflictException`.
+
+### Other prod hardening already present
+- Strong SECRET_KEY validator (startup fails on weak/default).
+- Lifespan guard: production + "*" in ALLOWED_ORIGINS → hard error.
+- Security response headers middleware (X-Content-Type-Options, X-Frame-Options, etc.).
+- Structured JSON logging.
+- Alembic head check on startup (warnings if not current).
 
 ## Operational Notes and Current Limitations
 
@@ -863,7 +949,7 @@ Inside `client/`:
 - The attachment model exists in the backend, but attachment upload/download is not exposed in the current API/UI.
 - Department listing exists, but department creation/management is not yet exposed in the UI.
 - The admin UI supports creating student and staff users; the API itself can create any role if called directly by an admin.
-- User deletion may fail when related records exist; the UI therefore offers deactivation as the safer default.
+- User deletion is intentionally blocked (409) when the user has associated complaints (see Production Notes for the exact policy and "deactivate instead" guidance).
 - The admin PDF export is generated client-side from dashboard data; no extra reporting table is required for it.
 
 ## Troubleshooting

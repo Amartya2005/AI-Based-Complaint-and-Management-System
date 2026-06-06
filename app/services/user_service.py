@@ -1,33 +1,40 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
-from app.models.user import User, UserRole
-from app.models.department import Department
-from app.schemas.user import UserCreate
-from app.auth.password import hash_password, verify_password
-
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.auth.password import hash_password, verify_password
+from app.exceptions import (
+    BadRequestException,
+    ConflictException,
+    ForbiddenException,
+    NotFoundException,
+    UnauthorizedException,
+)
+from app.models.department import Department
+from app.models.user import User, UserRole
+from app.schemas.user import UserCreate
+
 
 def create_user(db: Session, data: UserCreate) -> User:
     """Create a new user. Raises 400 if email or college_id already exists, or on invalid department."""
     if db.query(User).filter(User.email == data.email).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
+        raise BadRequestException(
+            "Email already registered",
+            "EMAIL_ALREADY_REGISTERED",
         )
     if db.query(User).filter(User.college_id == data.college_id).first():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="College ID already registered",
+        raise BadRequestException(
+            "College ID already registered",
+            "COLLEGE_ID_ALREADY_REGISTERED",
         )
     # Validate department exists before attempting insert
     if data.department_id is not None:
         dept = db.query(Department).filter(Department.id == data.department_id).first()
         if not dept:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Department with ID {data.department_id} does not exist. Leave it blank or use a valid department ID.",
+            raise BadRequestException(
+                f"Department with ID {data.department_id} does not exist. Leave it blank or use a valid department ID.",
+                "INVALID_DEPARTMENT_ID",
             )
     user = User(
         college_id=data.college_id,
@@ -45,9 +52,9 @@ def create_user(db: Session, data: UserCreate) -> User:
         return user
     except IntegrityError:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Database constraint failed. If you provided a department ID, ensure the department exists."
+        raise BadRequestException(
+            "Database constraint failed. If you provided a department ID, ensure the department exists.",
+            "DATABASE_CONSTRAINT_FAILED",
         )
 
 
@@ -60,54 +67,77 @@ def get_users(db: Session, role: Optional[UserRole] = None) -> List[User]:
 
 
 def delete_user(db: Session, user_id: int) -> dict:
-    """Delete a user by ID and cascade delete related records. Returns a success message or raises an appropriate error."""
+    """Delete a user by ID.
+    Explicitly blocked (409) if the user has associated complaints (as student or assignee).
+    Other relations (ratings, notifications, history) are cleaned where possible.
+    Always prefer deactivate_user for audit/compliance reasons.
+    """
+    from app.models.complaint import Complaint
     from app.models.notification import Notification
     from app.models.staff_rating import StaffRating
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with ID {user_id} not found"
+        raise NotFoundException(
+            f"User with ID {user_id} not found",
+            "USER_NOT_FOUND",
         )
-    
+
+    # Explicit check per requirements (after user lookup so existing tests' mock side_effects
+    # for the user query remain the first query call): block if complaints exist.
+    has_complaints = (
+        db.query(Complaint)
+        .filter(
+            (Complaint.student_id == user_id) | (Complaint.assigned_to == user_id)
+        )
+        .first()
+        is not None
+    )
+    if has_complaints:
+        raise ConflictException(
+            "User has associated complaints. Deactivate instead of delete.",
+            "USER_HAS_COMPLAINTS",
+        )
+
     try:
-        # Delete related records in order to avoid constraint violations
-        # First, delete notifications
+        # Best-effort cleanup of non-complaint relations (notifications, ratings given as staff)
         db.query(Notification).filter(Notification.user_id == user_id).delete()
-        
-        # Delete staff ratings if user is staff
         db.query(StaffRating).filter(StaffRating.staff_id == user_id).delete()
-        
-        # Finally delete the user
+
+        # Note: complaint_status_history and other history rows may still reference via changed_by.
+        # We intentionally do not cascade-delete complaints or full history.
+
         db.delete(user)
         db.commit()
-        return {"message": f"User {user.name} ({user.college_id}) has been deleted successfully"}
+        return {
+            "message": f"User {user.name} ({user.college_id}) has been deleted successfully"
+        }
     except Exception as e:
         db.rollback()
-        # Check if it's a foreign key constraint error
+        # Fallback for any remaining constraint issues (ratings history etc.)
         error_str = str(e).lower()
-        if 'foreign key' in error_str or 'constraint' in error_str or 'integrity' in error_str:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot delete {user.name} ({user.college_id}) because they have active assignments. Please deactivate the user instead to preserve complaint history and audit trails."
+        if "foreign key" in error_str or "constraint" in error_str or "integrity" in error_str:
+            raise ConflictException(
+                "User has associated complaints. Deactivate instead of delete.",
+                "USER_HAS_COMPLAINTS",
+                detail={"error": str(e)},
             )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to delete user: {str(e)}. Try deactivating instead."
-            )
+        raise BadRequestException(
+            "Failed to delete user. Try deactivating instead.",
+            "USER_DELETE_FAILED",
+            detail={"error": str(e)},
+        )
 
 
 def deactivate_user(db: Session, user_id: int) -> User:
     """Deactivate a user by marking them as inactive."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with ID {user_id} not found"
+        raise NotFoundException(
+            f"User with ID {user_id} not found",
+            "USER_NOT_FOUND",
         )
-    
+
     user.is_active = False
     db.commit()
     db.refresh(user)
@@ -126,13 +156,13 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """
     user = get_user_by_email(db, email)
     if not user or not verify_password(password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+        raise UnauthorizedException(
+            "Invalid email or password",
+            "INVALID_LOGIN_CREDENTIALS",
         )
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is deactivated",
+        raise ForbiddenException(
+            "Account is deactivated",
+            "ACCOUNT_DEACTIVATED",
         )
     return user
