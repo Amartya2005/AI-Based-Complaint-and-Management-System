@@ -428,4 +428,24 @@ async def websocket_notifications(websocket: WebSocket, token: str = Query(..., 
 
 @app.get("/api/health", tags=["Health"])
 def health_check():
-    return {"status": "ok", "service": "College Complaint Management System"}
+    """Report application liveness and database readiness separately."""
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "service": "College Complaint Management System",
+                "database": "unavailable",
+            },
+        )
+    finally:
+        db.close()
+
+    return {
+        "status": "ok",
+        "service": "College Complaint Management System",
+        "database": "ok",
+    }
