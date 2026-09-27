@@ -118,8 +118,8 @@ def delete_user(db: Session, user_id: int) -> dict:
         error_str = str(e).lower()
         if "foreign key" in error_str or "constraint" in error_str or "integrity" in error_str:
             raise ConflictException(
-                "User has associated complaints. Deactivate instead of delete.",
-                "USER_HAS_COMPLAINTS",
+                "User cannot be deleted because related records still reference the account. Deactivate instead.",
+                "USER_DELETE_CONFLICT",
                 detail={"error": str(e)},
             )
         raise BadRequestException(
