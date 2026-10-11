@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     ML_MIN_TRAINING_SAMPLES: int = 50
     ML_CONFIDENCE_THRESHOLD: float = 0.6
 
+    # Local Qwen department routing (Ollama-compatible API)
+    LOCAL_QWEN_ROUTING_ENABLED: bool = True
+    LOCAL_LLM_BASE_URL: str = "http://127.0.0.1:11434"
+    LOCAL_LLM_MODEL: str = "qwen3.5:4b"
+    LOCAL_LLM_TIMEOUT_SECONDS: float = 12.0
+    AI_ROUTING_MIN_CONFIDENCE: float = 0.45
+    AUTO_ASSIGN_DEPARTMENT_STAFF: bool = True
+
     UPLOAD_DIR: str = "./uploads"
 
     APP_ENV: Literal["development", "staging", "production"] = "development"

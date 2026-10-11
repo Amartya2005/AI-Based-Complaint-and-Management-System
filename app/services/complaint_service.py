@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from fastapi import HTTPException, status
 from app.models.user import User, UserRole
+from app.models.department import Department
+from app.config import get_settings
+from app.services.department_routing_service import resolve_department, find_least_loaded_staff
 from app.models.complaint import Complaint, ComplaintStatus, ComplaintCategory
 from app.models.complaint_status_history import ComplaintStatusHistory
 from app.schemas.complaint import ComplaintCreate, UpdateComplaintStatus
@@ -76,20 +79,31 @@ def _get_least_loaded_staff(db: Session, category: str = None) -> User | None:
 
 
 def create_complaint(db: Session, data: ComplaintCreate, student_id: int) -> Complaint:
-    """Create a new complaint and auto-classify it with the keyword-based ML model."""
+    """Create a complaint, retain category scoring, and route it to a department."""
+    settings = get_settings()
+    departments = db.query(Department).order_by(Department.id.asc()).all()
+    routing = resolve_department(
+        title=data.title,
+        description=data.description,
+        category=data.category,
+        departments=departments,
+        selected_department_id=data.department_id,
+        settings=settings,
+    )
+
     complaint = Complaint(
         title=data.title,
         description=data.description,
         category=data.category,
         status=ComplaintStatus.PENDING,
         student_id=student_id,
-        department_id=data.department_id,
+        department_id=routing.department_id,
     )
     db.add(complaint)
     db.commit()
     db.refresh(complaint)
 
-    # ─ Run keyword classifier and persist prediction ─────────────────────────────
+    # Keep the existing category prediction log and priority engine unchanged.
     predicted_category, confidence = _classify_complaint(data.title, data.description)
     log_ml_prediction(
         db=db,
@@ -98,18 +112,56 @@ def create_complaint(db: Session, data: ComplaintCreate, student_id: int) -> Com
         confidence_score=confidence,
     )
 
-    # ─ Initialize Priority ─────────────────────────────
     from app.services.ml_service import calculate_severity_score
     from app.services.priority_service import initialize_complaint_priority
-    
+
     severity_score = calculate_severity_score(predicted_category, confidence)
     initialize_complaint_priority(complaint, severity_score, db)
     db.commit()
     db.refresh(complaint)
 
-    # ─ Complaint stays in PENDING status ──────────────────────────────────────────
-    # Admin will manually assign to staff members using the assignment endpoint
-    # This ensures proper review before assignment
+    # The model selects only a department; staff assignment stays within that department.
+    # If no active staff member is available, retain PENDING for admin assignment.
+    if settings.AUTO_ASSIGN_DEPARTMENT_STAFF and routing.department_id is not None:
+        staff = find_least_loaded_staff(db, routing.department_id)
+        if staff is not None:
+            old_status = complaint.status
+            complaint.assigned_to = staff.id
+            complaint.status = ComplaintStatus.ASSIGNED
+            db.add(
+                ComplaintStatusHistory(
+                    complaint_id=complaint.id,
+                    changed_by=student_id,
+                    old_status=old_status,
+                    new_status=ComplaintStatus.ASSIGNED,
+                    remarks=(
+                        f"Automatically assigned to {staff.name} in "
+                        f"{routing.department_name or 'the selected department'} "
+                        f"(routing source: {routing.source})."
+                    ),
+                )
+            )
+            db.commit()
+            db.refresh(complaint)
+
+            create_notification(
+                db=db,
+                user_id=staff.id,
+                complaint_id=complaint.id,
+                message=(
+                    f"New complaint #{complaint.id} was assigned to you: "
+                    f"'{complaint.title}'"
+                ),
+            )
+            create_notification(
+                db=db,
+                user_id=student_id,
+                complaint_id=complaint.id,
+                message=(
+                    f"Your complaint #{complaint.id} was routed to "
+                    f"{routing.department_name or 'a department'} and assigned to staff."
+                ),
+            )
 
     return complaint
 

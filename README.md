@@ -15,6 +15,7 @@ This README describes the current implementation in this repository, including w
 - [Complaint Lifecycle and State Transitions](#complaint-lifecycle-and-state-transitions)
 - [Priority Engine](#priority-engine)
 - [Classification Logic](#classification-logic)
+- [Local Qwen Department Routing](#local-qwen-department-routing)
 - [Ratings and Smart Allocation](#ratings-and-smart-allocation)
 - [Frontend Experience](#frontend-experience)
 - [Architecture and Communication Flow](#architecture-and-communication-flow)
@@ -305,6 +306,14 @@ matches_for_best_category / total_keyword_matches
 ### Why this matters
 
 The project includes `scikit-learn` and `joblib` in backend dependencies, so the system is ready for a stronger ML pipeline later, but the current live code path is keyword-assisted classification plus prediction logging.
+
+## Local Qwen Department Routing
+
+When the student leaves the department field blank, the backend asks a local Qwen3.5:4B model (through Ollama) to select from the departments already registered in the database. The model cannot invent destinations. CCMS stores the selected department in the existing complaints.department_id field, then assigns the complaint to the least-loaded active staff member mapped to that department.
+
+Successful assignment uses the existing ASSIGNED status, complaint status history, and in-app notification workflow. If no active staff member belongs to the destination department, the complaint remains PENDING with its department set for the existing admin workflow. A department selected explicitly by the student is respected. The existing keyword category prediction, severity/priority calculations, admin assignment, and reassignment flows remain available.
+
+Configuration and local setup are documented in docs/LOCAL_QWEN_DEPARTMENT_ROUTING.md. The model can be disabled with LOCAL_QWEN_ROUTING_ENABLED=false; conservative keyword fallback is still used. AUTO_ASSIGN_DEPARTMENT_STAFF=false keeps the department inference but leaves staff assignment to an administrator.
 
 ## Ratings and Smart Allocation
 

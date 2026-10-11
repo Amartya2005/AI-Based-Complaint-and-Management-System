@@ -625,7 +625,7 @@ const StudentDashboard = () => {
                         })
                       }
                     >
-                      <option value="">Let admin route this later</option>
+                      <option value="">Let local Qwen route this automatically</option>
                       {departments.map((department) => (
                         <option key={department.id} value={department.id}>
                           {department.name} ({department.code})
