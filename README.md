@@ -1,6 +1,6 @@
 ﻿# College Complaint Management System
 
-[![CI](https://github.com/your-org-or-username/CCMS/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org-or-username/CCMS/actions/workflows/ci.yml)
+[![CI](https://github.com/Amartya2005/AI-Based-Complaint-and-Management-System/actions/workflows/ci.yml/badge.svg)](https://github.com/Amartya2005/AI-Based-Complaint-and-Management-System/actions/workflows/ci.yml)
 
 College Complaint Management System (CCMS) is a full-stack complaint intake, routing, escalation, tracking, analytics, and staff feedback platform for educational institutions. It is built with a FastAPI backend, a React + Vite frontend, SQLAlchemy ORM, MySQL/MariaDB, JWT authentication, and a background priority scheduler.
 
