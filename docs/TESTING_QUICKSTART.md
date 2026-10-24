@@ -15,6 +15,12 @@ To run one service test file:
 ```bash
 pytest tests/unit/test_user_service.py -q
 ```
+pytest tests/unit/test_jwt_handler.py -q
+```
+
+## JWT regression coverage
+
+The JWT handler tests cover token claim round-tripping, rejection of malformed tokens, and rejection of expired tokens. Run them whenever changing token creation, verification, or expiry settings.
 
 ## What the user-service tests cover
 
