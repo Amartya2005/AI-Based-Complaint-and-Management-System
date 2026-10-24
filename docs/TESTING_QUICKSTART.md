@@ -14,7 +14,6 @@ To run one service test file:
 
 ```bash
 pytest tests/unit/test_user_service.py -q
-```
 pytest tests/unit/test_jwt_handler.py -q
 ```
 
