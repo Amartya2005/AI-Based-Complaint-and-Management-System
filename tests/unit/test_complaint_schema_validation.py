@@ -37,3 +37,30 @@ def test_complaint_create_rejects_blank_or_overlong_title(title):
 def test_complaint_create_rejects_blank_or_overlong_description(description):
     with pytest.raises(ValidationError):
         ComplaintCreate(**_complaint_payload(description=description))
+
+
+from app.models.complaint import ComplaintStatus
+from app.schemas.complaint import UpdateComplaintStatus
+
+
+def test_status_update_normalizes_optional_remarks():
+    update = UpdateComplaintStatus(
+        new_status=ComplaintStatus.IN_PROGRESS,
+        remarks="  Work has started.  ",
+    )
+    empty = UpdateComplaintStatus(
+        new_status=ComplaintStatus.RESOLVED,
+        remarks="   ",
+    )
+
+    assert update.remarks == "Work has started."
+    assert empty.remarks is None
+
+
+def test_status_update_rejects_overlong_remarks():
+    with pytest.raises(ValidationError):
+        UpdateComplaintStatus(
+            new_status=ComplaintStatus.IN_PROGRESS,
+            remarks="x" * 2001,
+        )
+
