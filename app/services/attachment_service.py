@@ -86,7 +86,7 @@ def _save_file(file: UploadFile, complaint_id: int) -> tuple[str, int, str]:
     mime = kind.mime if kind else (file.content_type or "application/octet-stream")
 
     # Validate mime
-    if not any(mime.startswith(prefix) for prefix in ALLOWED_MIME_PREFIXES) and not any(ext == e for e in ALLOWED_EXTENSIONS):
+    if not any(mime.startswith(prefix) for prefix in ALLOWED_MIME_PREFIXES):
         file_path.unlink(missing_ok=True)
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
