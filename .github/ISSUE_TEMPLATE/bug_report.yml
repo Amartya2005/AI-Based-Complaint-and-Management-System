@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a reproducible problem in CCMS.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use synthetic examples only. Do not include student names, contact details, credentials, tokens, or real complaint descriptions.
+  - type: input
+    id: area
+    attributes:
+      label: Affected area
+      description: Backend, student dashboard, staff dashboard, admin dashboard, routing, notifications, or deployment.
+      placeholder: e.g. Complaint submission
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Give the smallest reliable sequence of steps.
+      placeholder: |
+        1. Sign in with a synthetic student account.
+        2. Open the complaint form.
+        3. Submit the example input.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Include browser, OS, deployment environment, and relevant app version or commit.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Remove personal data, authorization headers, tokens, and internal credentials before sharing.
+    validations:
+      required: false
