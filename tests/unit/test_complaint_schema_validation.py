@@ -1,0 +1,39 @@
+import pytest
+from pydantic import ValidationError
+
+from app.models.complaint import ComplaintCategory
+from app.schemas.complaint import ComplaintCreate
+
+
+def _complaint_payload(**overrides):
+    payload = {
+        "title": "Water supply issue",
+        "description": "There is no water in the hostel block.",
+        "category": ComplaintCategory.HOSTEL,
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_complaint_create_strips_required_text():
+    complaint = ComplaintCreate(
+        **_complaint_payload(
+            title="  Water supply issue  ",
+            description="  There is no water in the hostel block.  ",
+        )
+    )
+
+    assert complaint.title == "Water supply issue"
+    assert complaint.description == "There is no water in the hostel block."
+
+
+@pytest.mark.parametrize("title", ["", "   ", "x" * 501])
+def test_complaint_create_rejects_blank_or_overlong_title(title):
+    with pytest.raises(ValidationError):
+        ComplaintCreate(**_complaint_payload(title=title))
+
+
+@pytest.mark.parametrize("description", ["", "   ", "x" * 10001])
+def test_complaint_create_rejects_blank_or_overlong_description(description):
+    with pytest.raises(ValidationError):
+        ComplaintCreate(**_complaint_payload(description=description))
