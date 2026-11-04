@@ -20,7 +20,7 @@ def calculate_aging_score(created_at: datetime) -> int:
     Returns:
         int: Aging score (0-20)
     """
-    hours_elapsed = (datetime.utcnow() - created_at).total_seconds() / 3600
+    hours_elapsed = max(0.0, (datetime.utcnow() - created_at).total_seconds() / 3600)
     
     if hours_elapsed >= 72:  # 3 days
         return 20  # Max aging score - auto-escalate to CRITICAL
