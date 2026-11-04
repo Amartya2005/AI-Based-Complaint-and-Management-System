@@ -41,7 +41,7 @@ class ComplaintOut(BaseModel):
 
 
 class AssignComplaint(BaseModel):
-    staff_id: int
+    staff_id: int = Field(gt=0)
 
 
 class UpdateComplaintStatus(BaseModel):
