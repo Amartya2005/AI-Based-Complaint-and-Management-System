@@ -1,14 +1,22 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 from app.models.complaint import ComplaintCategory, ComplaintStatus
 
 
 class ComplaintCreate(BaseModel):
-    title: str
-    description: str
+    title: str = Field(min_length=1, max_length=500)
+    description: str = Field(min_length=1, max_length=10000)
     category: ComplaintCategory
     department_id: Optional[int] = None
+
+    @field_validator("title", "description")
+    @classmethod
+    def strip_required_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be blank")
+        return value
 
 
 class ComplaintOut(BaseModel):
