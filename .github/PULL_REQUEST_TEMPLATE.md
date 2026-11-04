@@ -1,20 +1,30 @@
 ## Summary
-Describe the user-visible or operational change.
+Describe the user-visible or operational change and link the related issue.
 
-## Why
-What problem does this solve?
+## Change type
+- [ ] Bug fix
+- [ ] Feature
+- [ ] Refactor
+- [ ] Documentation
+- [ ] Dependency or infrastructure change
+
+## Scope and behavior
+What changed, why is it needed, and which user roles or workflows are affected?
 
 ## Validation
 - [ ] Backend tests run (include command and result)
-- [ ] Frontend lint/build run where relevant
+- [ ] Frontend lint and production build run where relevant
 - [ ] Manual smoke test completed where relevant
-- [ ] Failure and permission cases considered
+- [ ] Success, empty, and failure states considered
+- [ ] Authorization and cross-user access cases checked
+- [ ] External integrations are not required by deterministic tests
 
 ## Data and security
-- [ ] No secrets or real complaint data added
-- [ ] Authorization is enforced by the API
+- [ ] No secrets, tokens, or real complaint data added
+- [ ] Complaint details and credentials are not added to logs
+- [ ] Authorization is enforced by the API, not only the UI
+- [ ] File upload and download permissions remain restricted
 - [ ] Database changes include a migration and rollback plan
-- [ ] Logs avoid credentials and unnecessary complaint content
 
 ## Release notes
-List configuration changes, migration steps, risks, and rollback instructions.
+List configuration changes, migration steps, operational risks, and rollback instructions.
