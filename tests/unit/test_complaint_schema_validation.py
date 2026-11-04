@@ -1,8 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models.complaint import ComplaintCategory
-from app.schemas.complaint import ComplaintCreate
+from app.models.complaint import ComplaintCategory, ComplaintStatus
+from app.schemas.complaint import AssignComplaint, ComplaintCreate, UpdateComplaintStatus
 
 
 def _complaint_payload(**overrides):
@@ -39,9 +39,6 @@ def test_complaint_create_rejects_blank_or_overlong_description(description):
         ComplaintCreate(**_complaint_payload(description=description))
 
 
-from app.models.complaint import ComplaintStatus
-from app.schemas.complaint import UpdateComplaintStatus
-
 
 def test_status_update_normalizes_optional_remarks():
     update = UpdateComplaintStatus(
@@ -64,3 +61,14 @@ def test_status_update_rejects_overlong_remarks():
             remarks="x" * 2001,
         )
 
+
+
+
+@pytest.mark.parametrize("staff_id", [0, -1])
+def test_assignment_schema_rejects_non_positive_staff_ids(staff_id):
+    with pytest.raises(ValidationError):
+        AssignComplaint(staff_id=staff_id)
+
+
+def test_assignment_schema_accepts_positive_staff_id():
+    assert AssignComplaint(staff_id=7).staff_id == 7
