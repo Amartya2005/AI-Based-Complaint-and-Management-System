@@ -46,4 +46,11 @@ class AssignComplaint(BaseModel):
 
 class UpdateComplaintStatus(BaseModel):
     new_status: ComplaintStatus
-    remarks: Optional[str] = None
+    remarks: Optional[str] = Field(default=None, max_length=2000)
+
+    @field_validator("remarks")
+    @classmethod
+    def normalize_remarks(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        return value.strip() or None
